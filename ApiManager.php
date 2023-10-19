@@ -36,6 +36,7 @@ use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Throwable;
 
 class ApiManager
 {
@@ -121,13 +122,13 @@ class ApiManager
      * If not, null is returned
      *
      * @param Request    $request
-     * @param Exception $exception
+     * @param Throwable $exception
      *
      * @throws Exception|ApiException
      * @throws Exception
      * @return Response|null
      */
-    public function getResponseForException(Request $request, Exception $exception)
+    public function getResponseForException(Request $request, Throwable $exception)
     {
         try {
             $api = $this->requestApiResolver->getApiForRequest($request);

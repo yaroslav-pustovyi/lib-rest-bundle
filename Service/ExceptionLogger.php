@@ -4,11 +4,11 @@ namespace Paysera\Bundle\RestBundle\Service;
 
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
-use Exception;
+use Throwable;
 
 class ExceptionLogger
 {
-    public function log(LoggerInterface $logger, Response $response, Exception $exception)
+    public function log(LoggerInterface $logger, Response $response, Throwable $exception)
     {
         if ($response->getStatusCode() === 500) {
             $logger->error($exception->getMessage(), ['exception' => $exception]);

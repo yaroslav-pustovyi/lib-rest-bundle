@@ -3,7 +3,6 @@
 namespace Paysera\Bundle\RestBundle\Tests;
 
 use Mockery;
-use Mockery\MockInterface;
 use Paysera\Bundle\RestBundle\ApiManager;
 use Paysera\Bundle\RestBundle\Exception\ApiException;
 use Paysera\Bundle\RestBundle\Listener\RestListener;
@@ -28,30 +27,21 @@ use Psr\Log\NullLogger;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
+use Symfony\Component\HttpKernel\Event\ControllerEvent;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class RestListenerPathConverterTest extends TestCase
 {
-    /**
-     * @var MockInterface|FilterControllerEvent
-     */
-    private $filterControllerEvent;
-
-    public function setUp(): void
-    {
-        $this->filterControllerEvent = Mockery::mock(FilterControllerEvent::class);
-    }
-
     public function testOnKernelControllerWithRequestQueryMapperValidationThrowsExceptionWithCamelCasePathConverter()
     {
         $exceptionThrown = false;
         try {
             $this
                 ->createRestListener(new CamelCaseToSnakeCaseConverter())
-                ->onKernelController($this->filterControllerEvent)
+                ->onKernelController($this->getControllerEvent())
             ;
         } catch (ApiException $apiException) {
             $exceptionThrown = true;
@@ -79,7 +69,7 @@ class RestListenerPathConverterTest extends TestCase
     {
         $exceptionThrown = false;
         try {
-            $this->createRestListener(new NoOpConverter())->onKernelController($this->filterControllerEvent);
+            $this->createRestListener(new NoOpConverter())->onKernelController($this->getControllerEvent());
             $this->expectException(ApiException::class);
         } catch (ApiException $apiException) {
             $exceptionThrown = true;
@@ -127,8 +117,6 @@ class RestListenerPathConverterTest extends TestCase
         $request->shouldReceive('getContent')->andReturn('{}');
         $request->attributes = $parameterBag;
         $request->query = $queryParameterBag;
-
-        $this->filterControllerEvent->shouldReceive('getRequest')->andReturn($request);
 
         $validator = Mockery::mock(ValidatorInterface::class);
 
@@ -183,6 +171,25 @@ class RestListenerPathConverterTest extends TestCase
             new ExceptionLogger(),
             $requestApiResolver,
             []
+        );
+    }
+
+    private function getControllerEvent(): ControllerEvent
+    {
+        $request = Mockery::mock(Request::class);
+        $request->allows('getContent');
+        $parameterBag = new ParameterBag();
+        $parameterBag->set('_controller', 'controller');
+        $request->attributes = $parameterBag;
+        $queryParameterBag = new ParameterBag();
+        $request->query = $queryParameterBag;
+
+        return new ControllerEvent(
+            Mockery::mock(HttpKernelInterface::class),
+            function () {
+            },
+            $request,
+            HttpKernelInterface::MAIN_REQUEST
         );
     }
 }
